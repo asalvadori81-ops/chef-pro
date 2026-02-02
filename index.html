@@ -136,17 +136,27 @@ img.thumb{max-width:100%;border-radius:8px;margin-bottom:8px}
 </section>
 
 <section id="ricette" class="hidden">
+<input id="cerca" placeholder="Cerca ricetta..." oninput="cercaRicetta()">
 <div id="listaRicette"></div>
 </section>
 
+
 <section id="scheda" class="hidden">
 <h2 id="titolo"></h2>
+
+<div class="no-print">
+<button onclick="modificaRicetta(ricettaAperta)">✏️ Modifica</button>
+<button onclick="eliminaRicetta(ricettaAperta)">🗑️ Elimina</button>
+</div>
+
 <div id="fotoScheda"></div>
 <div id="ingredientiScheda"></div>
 <div id="procedimentoScheda"></div>
 <p id="finituraScheda"></p>
+
 <button onclick="window.print()">🖨 Stampa</button>
 </section>
+
 
 <script>
 let ricette=JSON.parse(localStorage.getItem("ricette"))||[];
@@ -232,15 +242,12 @@ function renderRicette(){
  ricette.forEach((r,i)=>{
   let d=document.createElement("div");
   d.className="card";
-  d.innerHTML = `
-    <strong>${r.nome}</strong><br>
-    <small>${r.categoria}</small><br><br>
-    <button onclick="modificaRicetta(${i})">✏️ Modifica</button>
-    <button onclick="eliminaRicetta(${i})">🗑️ Elimina</button>
-  `;
+  d.innerHTML = `<strong>${r.nome}</strong><br><small>${r.categoria}</small>`;
+  d.onclick = ()=>mostraScheda(i);
   listaRicette.appendChild(d);
  });
 }
+
 
 function mostraScheda(i){
  let r=ricette[i];
@@ -292,6 +299,20 @@ function eliminaRicetta(i){
 }
 
 </script>
+function cercaRicetta(){
+ let t = cerca.value.toLowerCase();
+ listaRicette.innerHTML = "";
+
+ ricette
+  .filter(r => r.nome.toLowerCase().includes(t))
+  .forEach((r,i)=>{
+    let d = document.createElement("div");
+    d.className = "card";
+    d.innerHTML = `<strong>${r.nome}</strong><br><small>${r.categoria}</small>`;
+    d.onclick = () => mostraScheda(i);
+    listaRicette.appendChild(d);
+  });
+}
 
 </body>
 </html>
