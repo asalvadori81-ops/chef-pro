@@ -9,65 +9,21 @@
 <meta name="theme-color" content="#000000">
 
 <style>
-body {
-  margin: 0;
-  font-family: Arial, sans-serif;
-  background: #111;
-  color: #fff;
-}
-header {
-  background: #000;
-  padding: 15px;
-  text-align: center;
-  font-size: 22px;
-  font-weight: bold;
-}
-nav {
-  display: flex;
-  justify-content: space-around;
-  background: #1a1a1a;
-  padding: 10px;
-}
-nav button {
-  background: none;
-  border: none;
-  color: #fff;
-  font-size: 16px;
-}
-section {
-  padding: 15px;
-}
-input, select, textarea, button {
-  width: 100%;
-  margin-bottom: 8px;
-  padding: 10px;
-  border-radius: 6px;
-  border: none;
-  font-size: 15px;
-}
-button {
-  background: #fff;
-  color: #000;
-  font-weight: bold;
-}
-.card {
-  background: #222;
-  padding: 10px;
-  border-radius: 6px;
-  margin-bottom: 10px;
-}
-.hidden { display: none; }
-.total {
-  font-size: 18px;
-  font-weight: bold;
-  margin-top: 10px;
-}
+body { margin:0;font-family:Arial;background:#111;color:#fff;}
+header {background:#000;padding:15px;text-align:center;font-size:22px;font-weight:bold;}
+nav {display:flex;justify-content:space-around;background:#1a1a1a;padding:10px;}
+nav button {background:none;border:none;color:#fff;font-size:16px;}
+section {padding:15px;}
+input,select,textarea,button {width:100%;margin-bottom:8px;padding:10px;border-radius:6px;border:none;}
+button {background:#fff;color:#000;font-weight:bold;}
+.card {background:#222;padding:10px;border-radius:6px;margin-bottom:10px;}
+.hidden {display:none;}
+.total {font-size:18px;font-weight:bold;margin-top:10px;}
 
-/* STAMPA */
 @media print {
-  body { background:#fff; color:#000; }
-  nav, button { display:none; }
-  .card { border:1px solid #000; }
+ body {background:#fff;color:#000;}
+ nav,button,input,select,textarea {display:none;}
+ .card {border:1px solid #000;}
 }
 </style>
 </head>
@@ -77,53 +33,59 @@ button {
 <header>CHEF PRO</header>
 
 <nav>
-  <button onclick="showPage('home')">➕ Nuova</button>
-  <button onclick="showPage('categorie')">📂 Categorie</button>
+<button onclick="showPage('home')">➕ Nuova</button>
+<button onclick="showPage('categorie')">📂 Categorie</button>
 </nav>
 
 <section id="home">
-  <h2>Nuova Ricetta</h2>
-  <input id="nome" placeholder="Nome ricetta">
-  <select id="categoria"></select>
-  <textarea id="descrizione" placeholder="Procedimento"></textarea>
-  <button onclick="salvaRicetta()">Salva Ricetta</button>
+<h2>Nuova Ricetta</h2>
+<input id="nome" placeholder="Nome ricetta">
+<select id="categoria"></select>
+<textarea id="descrizione" placeholder="Procedimento"></textarea>
+<button onclick="salvaRicetta()">Salva</button>
 </section>
 
 <section id="categorie" class="hidden">
-  <input id="cerca" placeholder="Cerca in tutte le ricette..." oninput="cercaRicette()">
-  <div id="risultatiRicerca"></div>
-  <h3>Categorie</h3>
-  <div id="listaCategorie"></div>
+<input id="cerca" placeholder="Cerca in tutte le ricette..." oninput="cercaRicette()">
+<div id="risultatiRicerca"></div>
+<h3>Categorie</h3>
+<div id="listaCategorie"></div>
 </section>
 
 <section id="ricetta" class="hidden">
-  <h2 id="titoloRicetta"></h2>
-  <p id="testoRicetta"></p>
+<h2 id="titoloRicetta"></h2>
+<p id="testoRicetta"></p>
 
-  <h3>Ingredienti</h3>
-  <input id="ingNome" placeholder="Ingrediente">
-  <input id="ingCosto" type="number" placeholder="Costo €/kg o €/pz">
-  <input id="ingQuantita" type="number" placeholder="Quantità usata">
-  <button onclick="aggiungiIngrediente()">Aggiungi ingrediente</button>
+<h3>Ingredienti / Preparazioni</h3>
 
-  <div id="listaIngredienti"></div>
-  <div class="total" id="totaleCosto"></div>
+<select id="tipoIngrediente">
+<option value="semplice">Ingrediente semplice</option>
+<option value="base">Preparazione base</option>
+</select>
 
-  <button onclick="window.print()">🖨 Stampa scheda ricetta</button>
+<input id="ingNome" placeholder="Nome ingrediente">
+<input id="ingCosto" type="number" placeholder="Costo €/kg o totale base">
+<input id="ingQuantita" type="number" placeholder="Quantità usata (g / ml)">
+<button onclick="aggiungiIngrediente()">Aggiungi</button>
 
-  <div class="card">
-    <p><strong>Chef:</strong> ____________________________</p>
-    <p><strong>Data Produzione:</strong> ____________________________</p>
-    <p><strong>Data Abbattimento:</strong> ____________________________</p>
-    <p><strong>Stoccaggio:</strong> ____________________________</p>
-    <p><strong>Lotto:</strong> ____________________________</p>
-  </div>
+<div id="listaIngredienti"></div>
+<div class="total" id="totaleCosto"></div>
+
+<button id="stampaBtn" onclick="window.print()">🖨 Stampa scheda</button>
+
+<div id="campiStampa" class="card">
+<p><strong>Chef:</strong> ______________________</p>
+<p><strong>Data Produzione:</strong> ______________________</p>
+<p><strong>Data Abbattimento:</strong> ______________________</p>
+<p><strong>Stoccaggio:</strong> ______________________</p>
+<p><strong>Lotto:</strong> ______________________</p>
+</div>
 </section>
 
 <script>
-let categorie=["Antipasti","Primi","Secondi","Dolci"];
+let categorie=["Antipasti","Primi","Secondi","Dolci","Preparazioni base"];
 let ricette=JSON.parse(localStorage.getItem("ricette"))||[];
-let ricettaAttiva=null;
+let attiva=null;
 
 function showPage(id){
  document.querySelectorAll("section").forEach(s=>s.classList.add("hidden"));
@@ -131,55 +93,86 @@ function showPage(id){
 }
 
 function aggiornaCategorie(){
- const s=document.getElementById("categoria");
+ let s=document.getElementById("categoria");
  s.innerHTML="";
  categorie.forEach(c=>{
   let o=document.createElement("option");
-  o.textContent=o.value=c;
+  o.value=o.textContent=c;
   s.appendChild(o);
+ });
+ let l=document.getElementById("listaCategorie");
+ l.innerHTML="";
+ categorie.forEach(c=>{
+  let d=document.createElement("div");
+  d.className="card";
+  d.textContent=c;
+  d.onclick=()=>mostraCategoria(c);
+  l.appendChild(d);
  });
 }
 
 function salvaRicetta(){
- const n=nome.value, c=categoria.value, d=descrizione.value;
- if(!n)return;
- ricette.push({nome:n,categoria:c,descrizione:d,ingredienti:[]});
+ if(!nome.value)return;
+ ricette.push({
+  nome:nome.value,
+  categoria:categoria.value,
+  descrizione:descrizione.value,
+  ingredienti:[]
+ });
  localStorage.setItem("ricette",JSON.stringify(ricette));
- nome.value=""; descrizione.value="";
+ nome.value="";descrizione.value="";
+}
+
+function mostraCategoria(cat){
+ risultatiRicerca.innerHTML="";
+ ricette.filter(r=>r.categoria===cat).forEach(r=>{
+  let d=document.createElement("div");
+  d.className="card";
+  d.textContent=r.nome;
+  d.onclick=()=>mostraRicetta(r);
+  risultatiRicerca.appendChild(d);
+ });
 }
 
 function mostraRicetta(r){
- ricettaAttiva=r;
+ attiva=r;
  showPage("ricetta");
  titoloRicetta.textContent=r.nome;
  testoRicetta.textContent=r.descrizione;
  aggiornaIngredienti();
+ document.getElementById("stampaBtn").style.display =
+  r.categoria==="Preparazioni base"?"none":"block";
+ document.getElementById("campiStampa").style.display =
+  r.categoria==="Preparazioni base"?"none":"block";
 }
 
 function aggiungiIngrediente(){
- const n=ingNome.value;
- const c=parseFloat(ingCosto.value);
- const q=parseFloat(ingQuantita.value);
- if(!n||!c||!q)return;
- ricettaAttiva.ingredienti.push({nome:n,costo:c,quantita:q});
+ let tipo=tipoIngrediente.value;
+ let nomeI=ingNome.value;
+ let costo=parseFloat(ingCosto.value);
+ let q=parseFloat(ingQuantita.value);
+ if(!nomeI||!costo||!q)return;
+
+ attiva.ingredienti.push({tipo,nome:nomeI,costo,quantita:q});
  localStorage.setItem("ricette",JSON.stringify(ricette));
- ingNome.value=""; ingCosto.value=""; ingQuantita.value="";
+ ingNome.value="";ingCosto.value="";ingQuantita.value="";
  aggiornaIngredienti();
 }
 
 function aggiornaIngredienti(){
  listaIngredienti.innerHTML="";
  let tot=0;
- ricettaAttiva.ingredienti.forEach(i=>{
-  let costo=(i.costo*i.quantita)/1000;
+ attiva.ingredienti.forEach(i=>{
+  let costo=i.tipo==="base" ? (i.costo*i.quantita)/1000 : (i.costo*i.quantita)/1000;
   tot+=costo;
-  listaIngredienti.innerHTML+=`<div class="card">${i.nome} - € ${costo.toFixed(2)}</div>`;
+  listaIngredienti.innerHTML+=
+   `<div class="card">${i.nome} (${i.tipo}) - € ${costo.toFixed(2)}</div>`;
  });
- totaleCosto.textContent="Costo totale ricetta: € "+tot.toFixed(2);
+ totaleCosto.textContent="Costo totale: € "+tot.toFixed(2);
 }
 
 function cercaRicette(){
- const t=cerca.value.toLowerCase();
+ let t=cerca.value.toLowerCase();
  risultatiRicerca.innerHTML="";
  ricette.filter(r=>r.nome.toLowerCase().includes(t)).forEach(r=>{
   let d=document.createElement("div");
@@ -195,4 +188,3 @@ aggiornaCategorie();
 
 </body>
 </html>
-
