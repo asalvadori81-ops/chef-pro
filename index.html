@@ -17,9 +17,13 @@ input,select,textarea,button{width:100%;margin-bottom:8px;padding:10px;border-ra
 button{background:#fff;color:#000;font-weight:bold}
 .card{background:#222;padding:10px;border-radius:6px;margin-bottom:10px}
 .hidden{display:none}
-.suggest{background:#333;padding:8px;border-radius:6px;margin-top:-6px}
-.suggest div{padding:5px;border-bottom:1px solid #444}
-.suggest div:last-child{border:none}
+.icon-btn{background:#333;color:#fff;font-size:18px}
+img.thumb{max-width:100%;border-radius:8px;margin-bottom:8px}
+
+@media print{
+nav,button,input,select,textarea,.no-print{display:none}
+body{background:#fff;color:#000}
+}
 </style>
 </head>
 
@@ -37,7 +41,7 @@ button{background:#fff;color:#000;font-weight:bold}
 
 <input id="nome" placeholder="Nome ricetta">
 
-<select id="categoria">
+<select id="categoria" onchange="toggleFoto()">
 <option>Antipasti</option>
 <option>Primi</option>
 <option>Secondi</option>
@@ -47,10 +51,8 @@ button{background:#fff;color:#000;font-weight:bold}
 
 <h3>Ingredienti</h3>
 <input id="ingInput" placeholder="Ingrediente">
-<div id="suggestioni" class="suggest hidden"></div>
 <input id="ingQuantita" placeholder="Quantità">
 <button onclick="aggiungiIngrediente()">Aggiungi ingrediente</button>
-
 <div id="listaIngredienti"></div>
 
 <h3>Procedimento</h3>
@@ -59,6 +61,16 @@ button{background:#fff;color:#000;font-weight:bold}
 
 <input id="finitura" placeholder="Finitura del piatto">
 
+<!-- FOTO -->
+<div id="fotoSezione">
+<button class="icon-btn no-print" onclick="fotoInput.click()">📷 Aggiungi foto del piatto</button>
+<input type="file" id="fotoInput" accept="image/*" capture="environment" multiple class="hidden">
+<div id="anteprime"></div>
+<label class="no-print">
+<input type="checkbox" id="stampaFoto"> Includi foto in stampa
+</label>
+</div>
+
 <button onclick="salvaRicetta()">Salva ricetta</button>
 </section>
 
@@ -66,51 +78,41 @@ button{background:#fff;color:#000;font-weight:bold}
 <div id="listaRicette"></div>
 </section>
 
-<script>
-let ricette = JSON.parse(localStorage.getItem("ricette")) || [];
-let ingredientDB = JSON.parse(localStorage.getItem("ingredientDB")) || 
-["Pomodoro","Patata","Cipolla","Aglio","Olio extravergine","Sale","Pepe","Zucchero","Farina","Uova","Latte","Burro"];
+<section id="scheda" class="hidden">
+<h2 id="titolo"></h2>
+<div id="fotoScheda"></div>
+<div id="ingredientiScheda"></div>
+<div id="procedimentoScheda"></div>
+<p id="finituraScheda"></p>
+<button onclick="window.print()">🖨 Stampa</button>
+</section>
 
-let ingredientiTemp=[];
-let passaggiTemp=[];
+<script>
+let ricette=JSON.parse(localStorage.getItem("ricette"))||[];
+let ingredientiTemp=[],passaggiTemp=[],fotoTemp=[];
 
 function showPage(id){
  document.querySelectorAll("section").forEach(s=>s.classList.add("hidden"));
  document.getElementById(id).classList.remove("hidden");
- renderRicette();
+ if(id==="ricette")renderRicette();
+}
+
+function toggleFoto(){
+ fotoSezione.classList.toggle("hidden",categoria.value==="Preparazioni base");
 }
 
 function aggiungiIngrediente(){
- if(!ingInput.value || !ingQuantita.value) return;
- if(!ingredientDB.includes(ingInput.value)){
-  ingredientDB.push(ingInput.value);
-  localStorage.setItem("ingredientDB",JSON.stringify(ingredientDB));
- }
- ingredientiTemp.push({nome:ingInput.value,quantita:ingQuantita.value});
+ if(!ingInput.value||!ingQuantita.value)return;
+ ingredientiTemp.push({n:ingInput.value,q:ingQuantita.value});
  ingInput.value="";ingQuantita.value="";
- suggerimenti.classList.add("hidden");
  renderIngredienti();
 }
 
 function renderIngredienti(){
  listaIngredienti.innerHTML="";
  ingredientiTemp.forEach(i=>{
-  listaIngredienti.innerHTML+=
-   `<div class="card">${i.nome} – ${i.quantita}</div>`;
+  listaIngredienti.innerHTML+=`<div class="card">${i.n} – ${i.q}</div>`;
  });
-}
-
-ingInput.oninput=()=>{
- let v=ingInput.value.toLowerCase();
- if(!v){suggerimenti.classList.add("hidden");return;}
- suggerimenti.innerHTML="";
- ingredientDB.filter(i=>i.toLowerCase().includes(v)).forEach(i=>{
-  let d=document.createElement("div");
-  d.textContent=i;
-  d.onclick=()=>{ingInput.value=i;suggerimenti.classList.add("hidden");};
-  suggerimenti.appendChild(d);
- });
- suggerimenti.classList.remove("hidden");
 }
 
 function aggiungiPassaggio(){
@@ -122,32 +124,56 @@ function renderPassaggi(){
  passaggi.innerHTML="";
  passaggiTemp.forEach((p,i)=>{
   passaggi.innerHTML+=
-   `<textarea placeholder="Passaggio ${i+1}" 
-    oninput="passaggiTemp[${i}]=this.value">${p}</textarea>`;
+   `<textarea placeholder="Passaggio ${i+1}" oninput="passaggiTemp[${i}]=this.value">${p}</textarea>`;
  });
 }
 
+fotoInput.onchange=()=>{
+ [...fotoInput.files].forEach(f=>{
+  let r=new FileReader();
+  r.onload=()=>{fotoTemp.push(r.result);renderFoto();};
+  r.readAsDataURL(f);
+ });
+}
+
+function renderFoto(){
+ anteprime.innerHTML="";
+ fotoTemp.forEach(f=>anteprime.innerHTML+=`<img src="${f}" class="thumb">`);
+}
+
 function salvaRicetta(){
- if(!nome.value)return;
  ricette.push({
   nome:nome.value,
   categoria:categoria.value,
   ingredienti:ingredientiTemp,
   procedimento:passaggiTemp,
-  finitura:finitura.value
+  finitura:finitura.value,
+  foto:fotoTemp,
+  stampaFoto:stampaFoto.checked
  });
  localStorage.setItem("ricette",JSON.stringify(ricette));
- nome.value="";finitura.value="";
- ingredientiTemp=[];passaggiTemp=[];
- renderIngredienti();renderPassaggi();
+ location.reload();
 }
 
 function renderRicette(){
  listaRicette.innerHTML="";
- ricette.forEach(r=>{
-  listaRicette.innerHTML+=
-   `<div class="card"><strong>${r.nome}</strong><br>${r.categoria}</div>`;
+ ricette.forEach((r,i)=>{
+  let d=document.createElement("div");
+  d.className="card";
+  d.textContent=r.nome;
+  d.onclick=()=>mostraScheda(i);
+  listaRicette.appendChild(d);
  });
+}
+
+function mostraScheda(i){
+ let r=ricette[i];
+ showPage("scheda");
+ titolo.textContent=r.nome;
+ ingredientiScheda.innerHTML=r.ingredienti.map(i=>`<div>${i.n} – ${i.q}</div>`).join("");
+ procedimentoScheda.innerHTML=r.procedimento.map((p,i)=>`<p>${i+1}. ${p}</p>`).join("");
+ finituraScheda.textContent=r.finitura;
+ fotoScheda.innerHTML=r.stampaFoto?r.foto.map(f=>`<img src="${f}" class="thumb">`).join(""):"";
 }
 </script>
 
