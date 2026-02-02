@@ -1,47 +1,114 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>CHEF PRO</title>
 
   <link rel="manifest" href="manifest.json">
-
-  <meta name="theme-color" content="#000000" />
+  <meta name="theme-color" content="#000000">
 
   <style>
     body {
       margin: 0;
       font-family: Arial, sans-serif;
-      background: #000;
+      background: #111;
       color: #fff;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      height: 100vh;
+    }
+    header {
+      background: #000;
+      padding: 15px;
       text-align: center;
+      font-size: 22px;
+      font-weight: bold;
     }
-    .container {
-      padding: 20px;
+    main {
+      padding: 15px;
     }
-    img {
-      width: 120px;
-      margin-bottom: 20px;
+    input, select, textarea, button {
+      width: 100%;
+      margin-bottom: 10px;
+      padding: 10px;
+      border-radius: 6px;
+      border: none;
+      font-size: 16px;
     }
-    h1 {
-      margin: 0;
-      font-size: 32px;
+    button {
+      background: #fff;
+      color: #000;
+      font-weight: bold;
     }
-    p {
-      opacity: 0.8;
+    .ricetta {
+      background: #222;
+      padding: 10px;
+      margin-bottom: 10px;
+      border-radius: 6px;
+    }
+    .categoria {
+      font-size: 14px;
+      opacity: 0.7;
     }
   </style>
 </head>
+
 <body>
-  <div class="container">
-    <img src="chef-hat.png" alt="Chef Pro">
-    <h1>CHEF PRO</h1>
-    <p>Gestione ricette e food cost</p>
-  </div>
+  <header>CHEF PRO</header>
+
+  <main>
+    <h2>Nuova Ricetta</h2>
+
+    <input id="nome" placeholder="Nome ricetta">
+    <select id="categoria">
+      <option value="Antipasti">Antipasti</option>
+      <option value="Primi">Primi</option>
+      <option value="Secondi">Secondi</option>
+      <option value="Dolci">Dolci</option>
+    </select>
+    <textarea id="descrizione" placeholder="Descrizione ricetta"></textarea>
+
+    <button onclick="salvaRicetta()">Salva ricetta</button>
+
+    <h2>Ricette</h2>
+    <div id="lista"></div>
+  </main>
+
+  <script>
+    let ricette = JSON.parse(localStorage.getItem("ricette")) || [];
+
+    function salvaRicetta() {
+      const nome = document.getElementById("nome").value;
+      const categoria = document.getElementById("categoria").value;
+      const descrizione = document.getElementById("descrizione").value;
+
+      if (!nome) return alert("Inserisci il nome della ricetta");
+
+      ricette.push({ nome, categoria, descrizione });
+      localStorage.setItem("ricette", JSON.stringify(ricette));
+
+      document.getElementById("nome").value = "";
+      document.getElementById("descrizione").value = "";
+
+      mostraRicette();
+    }
+
+    function mostraRicette() {
+      const lista = document.getElementById("lista");
+      lista.innerHTML = "";
+
+      ricette.forEach(r => {
+        const div = document.createElement("div");
+        div.className = "ricetta";
+        div.innerHTML = `
+          <strong>${r.nome}</strong>
+          <div class="categoria">${r.categoria}</div>
+          <div>${r.descrizione}</div>
+        `;
+        lista.appendChild(div);
+      });
+    }
+
+    mostraRicette();
+  </script>
 </body>
 </html>
+
