@@ -56,16 +56,18 @@ button {
   border-radius: 6px;
   margin-bottom: 10px;
 }
-img {
-  max-width: 100%;
-  border-radius: 6px;
-}
 .hidden { display: none; }
-.small { font-size: 14px; opacity: 0.7; }
 .total {
   font-size: 18px;
   font-weight: bold;
   margin-top: 10px;
+}
+
+/* STAMPA */
+@media print {
+  body { background:#fff; color:#000; }
+  nav, button { display:none; }
+  .card { border:1px solid #000; }
 }
 </style>
 </head>
@@ -79,7 +81,6 @@ img {
   <button onclick="showPage('categorie')">📂 Categorie</button>
 </nav>
 
-<!-- HOME -->
 <section id="home">
   <h2>Nuova Ricetta</h2>
   <input id="nome" placeholder="Nome ricetta">
@@ -88,19 +89,13 @@ img {
   <button onclick="salvaRicetta()">Salva Ricetta</button>
 </section>
 
-<!-- CATEGORIE + RICERCA -->
 <section id="categorie" class="hidden">
   <input id="cerca" placeholder="Cerca in tutte le ricette..." oninput="cercaRicette()">
   <div id="risultatiRicerca"></div>
-
   <h3>Categorie</h3>
   <div id="listaCategorie"></div>
-
-  <input id="nuovaCategoria" placeholder="Nuova categoria">
-  <button onclick="aggiungiCategoria()">Aggiungi categoria</button>
 </section>
 
-<!-- RICETTA DETTAGLIO -->
 <section id="ricetta" class="hidden">
   <h2 id="titoloRicetta"></h2>
   <p id="testoRicetta"></p>
@@ -113,116 +108,91 @@ img {
 
   <div id="listaIngredienti"></div>
   <div class="total" id="totaleCosto"></div>
+
+  <button onclick="window.print()">🖨 Stampa scheda ricetta</button>
+
+  <div class="card">
+    <p><strong>Chef:</strong> ____________________________</p>
+    <p><strong>Data Produzione:</strong> ____________________________</p>
+    <p><strong>Data Abbattimento:</strong> ____________________________</p>
+    <p><strong>Stoccaggio:</strong> ____________________________</p>
+    <p><strong>Lotto:</strong> ____________________________</p>
+  </div>
 </section>
 
 <script>
-let categorie = JSON.parse(localStorage.getItem("categorie")) || ["Antipasti","Primi","Secondi","Dolci"];
-let ricette = JSON.parse(localStorage.getItem("ricette")) || [];
-let ricettaAttiva = null;
+let categorie=["Antipasti","Primi","Secondi","Dolci"];
+let ricette=JSON.parse(localStorage.getItem("ricette"))||[];
+let ricettaAttiva=null;
 
-function showPage(id) {
-  document.querySelectorAll("section").forEach(s => s.classList.add("hidden"));
-  document.getElementById(id).classList.remove("hidden");
+function showPage(id){
+ document.querySelectorAll("section").forEach(s=>s.classList.add("hidden"));
+ document.getElementById(id).classList.remove("hidden");
 }
 
-function aggiornaCategorie() {
-  const sel = document.getElementById("categoria");
-  sel.innerHTML = "";
-  categorie.forEach(c => {
-    let o = document.createElement("option");
-    o.value = c; o.textContent = c;
-    sel.appendChild(o);
-  });
+function aggiornaCategorie(){
+ const s=document.getElementById("categoria");
+ s.innerHTML="";
+ categorie.forEach(c=>{
+  let o=document.createElement("option");
+  o.textContent=o.value=c;
+  s.appendChild(o);
+ });
 }
 
-function salvaRicetta() {
-  const nome = document.getElementById("nome").value;
-  const categoria = document.getElementById("categoria").value;
-  const descrizione = document.getElementById("descrizione").value;
-  if (!nome) return alert("Nome mancante");
-
-  ricette.push({ nome, categoria, descrizione, ingredienti: [] });
-  localStorage.setItem("ricette", JSON.stringify(ricette));
-  document.getElementById("nome").value = "";
-  document.getElementById("descrizione").value = "";
+function salvaRicetta(){
+ const n=nome.value, c=categoria.value, d=descrizione.value;
+ if(!n)return;
+ ricette.push({nome:n,categoria:c,descrizione:d,ingredienti:[]});
+ localStorage.setItem("ricette",JSON.stringify(ricette));
+ nome.value=""; descrizione.value="";
 }
 
-function mostraRicetta(r) {
-  ricettaAttiva = r;
-  showPage("ricetta");
-  document.getElementById("titoloRicetta").textContent = r.nome;
-  document.getElementById("testoRicetta").textContent = r.descrizione;
-  aggiornaIngredienti();
+function mostraRicetta(r){
+ ricettaAttiva=r;
+ showPage("ricetta");
+ titoloRicetta.textContent=r.nome;
+ testoRicetta.textContent=r.descrizione;
+ aggiornaIngredienti();
 }
 
-function aggiungiIngrediente() {
-  const n = document.getElementById("ingNome").value;
-  const c = parseFloat(document.getElementById("ingCosto").value);
-  const q = parseFloat(document.getElementById("ingQuantita").value);
-  if (!n || !c || !q) return;
-
-  ricettaAttiva.ingredienti.push({ nome:n, costo:c, quantita:q });
-  localStorage.setItem("ricette", JSON.stringify(ricette));
-  document.getElementById("ingNome").value="";
-  document.getElementById("ingCosto").value="";
-  document.getElementById("ingQuantita").value="";
-  aggiornaIngredienti();
+function aggiungiIngrediente(){
+ const n=ingNome.value;
+ const c=parseFloat(ingCosto.value);
+ const q=parseFloat(ingQuantita.value);
+ if(!n||!c||!q)return;
+ ricettaAttiva.ingredienti.push({nome:n,costo:c,quantita:q});
+ localStorage.setItem("ricette",JSON.stringify(ricette));
+ ingNome.value=""; ingCosto.value=""; ingQuantita.value="";
+ aggiornaIngredienti();
 }
 
-function aggiornaIngredienti() {
-  const div = document.getElementById("listaIngredienti");
-  div.innerHTML="";
-  let totale = 0;
-
-  ricettaAttiva.ingredienti.forEach(i => {
-    const costo = (i.costo * i.quantita) / 1000;
-    totale += costo;
-    div.innerHTML += `<div class="card">${i.nome} - € ${costo.toFixed(2)}</div>`;
-  });
-
-  document.getElementById("totaleCosto").textContent =
-    "Costo totale ricetta: € " + totale.toFixed(2);
+function aggiornaIngredienti(){
+ listaIngredienti.innerHTML="";
+ let tot=0;
+ ricettaAttiva.ingredienti.forEach(i=>{
+  let costo=(i.costo*i.quantita)/1000;
+  tot+=costo;
+  listaIngredienti.innerHTML+=`<div class="card">${i.nome} - € ${costo.toFixed(2)}</div>`;
+ });
+ totaleCosto.textContent="Costo totale ricetta: € "+tot.toFixed(2);
 }
 
-function mostraCategorie() {
-  const d = document.getElementById("listaCategorie");
-  d.innerHTML="";
-  categorie.forEach(c=>{
-    const card=document.createElement("div");
-    card.className="card";
-    card.textContent=c;
-    card.onclick=()=>ricette.filter(r=>r.categoria===c).forEach(mostraRicetta);
-    d.appendChild(card);
-  });
-}
-
-function aggiungiCategoria() {
-  const n=document.getElementById("nuovaCategoria").value;
-  if (!n) return;
-  categorie.push(n);
-  localStorage.setItem("categorie",JSON.stringify(categorie));
-  document.getElementById("nuovaCategoria").value="";
-  mostraCategorie();
-  aggiornaCategorie();
-}
-
-function cercaRicette() {
-  const t=document.getElementById("cerca").value.toLowerCase();
-  const d=document.getElementById("risultatiRicerca");
-  d.innerHTML="";
-  if (!t) return;
-  ricette.filter(r=>r.nome.toLowerCase().includes(t)).forEach(r=>{
-    const c=document.createElement("div");
-    c.className="card";
-    c.textContent=r.nome+" ("+r.categoria+")";
-    c.onclick=()=>mostraRicetta(r);
-    d.appendChild(c);
-  });
+function cercaRicette(){
+ const t=cerca.value.toLowerCase();
+ risultatiRicerca.innerHTML="";
+ ricette.filter(r=>r.nome.toLowerCase().includes(t)).forEach(r=>{
+  let d=document.createElement("div");
+  d.className="card";
+  d.textContent=r.nome+" ("+r.categoria+")";
+  d.onclick=()=>mostraRicetta(r);
+  risultatiRicerca.appendChild(d);
+ });
 }
 
 aggiornaCategorie();
-mostraCategorie();
 </script>
 
 </body>
 </html>
+
