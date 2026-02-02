@@ -21,9 +21,39 @@ button{background:#fff;color:#000;font-weight:bold}
 img.thumb{max-width:100%;border-radius:8px;margin-bottom:8px}
 
 @media print{
-nav,button,input,select,textarea,.no-print{display:none}
-body{background:#fff;color:#000}
+  nav,button,input,select,textarea,.no-print{display:none}
+
+  body{
+    background:#fff;
+    color:#000;
+    font-size:12px;
+    margin:10mm;
+  }
+
+  h2,h3{
+    margin:4px 0;
+  }
+
+  img.thumb{
+    max-width:45%;
+    max-height:120px;
+    object-fit:cover;
+    display:inline-block;
+    margin:4px;
+    page-break-inside:avoid;
+  }
+
+  #fotoScheda{
+    display:flex;
+    flex-wrap:wrap;
+    justify-content:flex-start;
+  }
+
+  .card, p, div{
+    page-break-inside:avoid;
+  }
 }
+
 </style>
 </head>
 
