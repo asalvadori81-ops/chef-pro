@@ -9,21 +9,21 @@
 <meta name="theme-color" content="#000000">
 
 <style>
-body { margin:0;font-family:Arial;background:#111;color:#fff;}
-header {background:#000;padding:15px;text-align:center;font-size:22px;font-weight:bold;}
-nav {display:flex;justify-content:space-around;background:#1a1a1a;padding:10px;}
-nav button {background:none;border:none;color:#fff;font-size:16px;}
-section {padding:15px;}
-input,select,textarea,button {width:100%;margin-bottom:8px;padding:10px;border-radius:6px;border:none;}
-button {background:#fff;color:#000;font-weight:bold;}
-.card {background:#222;padding:10px;border-radius:6px;margin-bottom:10px;}
-.hidden {display:none;}
-.total {font-size:18px;font-weight:bold;margin-top:10px;}
+body{margin:0;font-family:Arial;background:#111;color:#fff}
+header{background:#000;padding:15px;text-align:center;font-size:22px;font-weight:bold}
+nav{display:flex;justify-content:space-around;background:#1a1a1a;padding:10px}
+nav button{background:none;border:none;color:#fff;font-size:16px}
+section{padding:15px}
+input,select,textarea,button{width:100%;margin-bottom:8px;padding:10px;border-radius:6px;border:none}
+button{background:#fff;color:#000;font-weight:bold}
+.card{background:#222;padding:10px;border-radius:6px;margin-bottom:10px}
+.hidden{display:none}
+.total{font-size:18px;font-weight:bold;margin-top:10px}
 
-@media print {
- body {background:#fff;color:#000;}
- nav,button,input,select,textarea {display:none;}
- .card {border:1px solid #000;}
+@media print{
+body{background:#fff;color:#000}
+nav,button,input,select,textarea{display:none}
+.card{border:1px solid #000}
 }
 </style>
 </head>
@@ -34,7 +34,7 @@ button {background:#fff;color:#000;font-weight:bold;}
 
 <nav>
 <button onclick="showPage('home')">➕ Nuova</button>
-<button onclick="showPage('categorie')">📂 Categorie</button>
+<button onclick="showPage('categorie')">📂 Ricette</button>
 </nav>
 
 <section id="home">
@@ -42,7 +42,19 @@ button {background:#fff;color:#000;font-weight:bold;}
 <input id="nome" placeholder="Nome ricetta">
 <select id="categoria"></select>
 <textarea id="descrizione" placeholder="Procedimento"></textarea>
-<button onclick="salvaRicetta()">Salva</button>
+
+<h3>Ingredienti</h3>
+<input id="ingNome" placeholder="Ingrediente">
+<input id="ingQuantita" placeholder="Quantità (es. 500 g, q.b.)">
+<label>
+<input type="checkbox" id="usaCosto"> Calcola food cost
+</label>
+<input id="ingCosto" type="number" placeholder="Costo €/kg o totale" class="hidden">
+<button onclick="aggiungiIngredienteTemp()">Aggiungi ingrediente</button>
+
+<div id="ingredientiTemp"></div>
+
+<button onclick="salvaRicetta()">Salva ricetta</button>
 </section>
 
 <section id="categorie" class="hidden">
@@ -56,18 +68,7 @@ button {background:#fff;color:#000;font-weight:bold;}
 <h2 id="titoloRicetta"></h2>
 <p id="testoRicetta"></p>
 
-<h3>Ingredienti / Preparazioni</h3>
-
-<select id="tipoIngrediente">
-<option value="semplice">Ingrediente semplice</option>
-<option value="base">Preparazione base</option>
-</select>
-
-<input id="ingNome" placeholder="Nome ingrediente">
-<input id="ingCosto" type="number" placeholder="Costo €/kg o totale base">
-<input id="ingQuantita" type="number" placeholder="Quantità usata (g / ml)">
-<button onclick="aggiungiIngrediente()">Aggiungi</button>
-
+<h3>Ingredienti</h3>
 <div id="listaIngredienti"></div>
 <div class="total" id="totaleCosto"></div>
 
@@ -85,7 +86,10 @@ button {background:#fff;color:#000;font-weight:bold;}
 <script>
 let categorie=["Antipasti","Primi","Secondi","Dolci","Preparazioni base"];
 let ricette=JSON.parse(localStorage.getItem("ricette"))||[];
+let tempIngredienti=[];
 let attiva=null;
+
+usaCosto.onchange=()=>ingCosto.classList.toggle("hidden",!usaCosto.checked);
 
 function showPage(id){
  document.querySelectorAll("section").forEach(s=>s.classList.add("hidden"));
@@ -93,21 +97,39 @@ function showPage(id){
 }
 
 function aggiornaCategorie(){
- let s=document.getElementById("categoria");
- s.innerHTML="";
+ categoria.innerHTML="";
  categorie.forEach(c=>{
   let o=document.createElement("option");
   o.value=o.textContent=c;
-  s.appendChild(o);
+  categoria.appendChild(o);
  });
- let l=document.getElementById("listaCategorie");
- l.innerHTML="";
+ listaCategorie.innerHTML="";
  categorie.forEach(c=>{
   let d=document.createElement("div");
   d.className="card";
   d.textContent=c;
   d.onclick=()=>mostraCategoria(c);
-  l.appendChild(d);
+  listaCategorie.appendChild(d);
+ });
+}
+
+function aggiungiIngredienteTemp(){
+ if(!ingNome.value||!ingQuantita.value)return;
+ tempIngredienti.push({
+  nome:ingNome.value,
+  quantita:ingQuantita.value,
+  costo:usaCosto.checked?parseFloat(ingCosto.value)||null:null
+ });
+ ingNome.value="";ingQuantita.value="";ingCosto.value="";usaCosto.checked=false;
+ ingCosto.classList.add("hidden");
+ renderTemp();
+}
+
+function renderTemp(){
+ ingredientiTemp.innerHTML="";
+ tempIngredienti.forEach(i=>{
+  ingredientiTemp.innerHTML+=
+   `<div class="card">${i.nome} – ${i.quantita} ${i.costo? "€ "+i.costo:"(costo non calcolato)"}</div>`;
  });
 }
 
@@ -117,10 +139,11 @@ function salvaRicetta(){
   nome:nome.value,
   categoria:categoria.value,
   descrizione:descrizione.value,
-  ingredienti:[]
+  ingredienti:tempIngredienti
  });
  localStorage.setItem("ricette",JSON.stringify(ricette));
  nome.value="";descrizione.value="";
+ tempIngredienti=[];renderTemp();
 }
 
 function mostraCategoria(cat){
@@ -140,35 +163,27 @@ function mostraRicetta(r){
  titoloRicetta.textContent=r.nome;
  testoRicetta.textContent=r.descrizione;
  aggiornaIngredienti();
- document.getElementById("stampaBtn").style.display =
+ stampaBtn.style.display =
   r.categoria==="Preparazioni base"?"none":"block";
- document.getElementById("campiStampa").style.display =
+ campiStampa.style.display =
   r.categoria==="Preparazioni base"?"none":"block";
-}
-
-function aggiungiIngrediente(){
- let tipo=tipoIngrediente.value;
- let nomeI=ingNome.value;
- let costo=parseFloat(ingCosto.value);
- let q=parseFloat(ingQuantita.value);
- if(!nomeI||!costo||!q)return;
-
- attiva.ingredienti.push({tipo,nome:nomeI,costo,quantita:q});
- localStorage.setItem("ricette",JSON.stringify(ricette));
- ingNome.value="";ingCosto.value="";ingQuantita.value="";
- aggiornaIngredienti();
 }
 
 function aggiornaIngredienti(){
  listaIngredienti.innerHTML="";
- let tot=0;
+ let tot=0;let haCosto=false;
  attiva.ingredienti.forEach(i=>{
-  let costo=i.tipo==="base" ? (i.costo*i.quantita)/1000 : (i.costo*i.quantita)/1000;
-  tot+=costo;
-  listaIngredienti.innerHTML+=
-   `<div class="card">${i.nome} (${i.tipo}) - € ${costo.toFixed(2)}</div>`;
+  if(i.costo){
+   tot+=i.costo;
+   haCosto=true;
+   listaIngredienti.innerHTML+=
+    `<div class="card">${i.nome} – ${i.quantita} → € ${i.costo.toFixed(2)}</div>`;
+  }else{
+   listaIngredienti.innerHTML+=
+    `<div class="card">${i.nome} – ${i.quantita} (costo non calcolato)</div>`;
+  }
  });
- totaleCosto.textContent="Costo totale: € "+tot.toFixed(2);
+ totaleCosto.textContent=haCosto?"Food cost totale: € "+tot.toFixed(2):"";
 }
 
 function cercaRicette(){
