@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>CHEF PRO</title>
-
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#000000">
 
@@ -18,13 +17,9 @@ input,select,textarea,button{width:100%;margin-bottom:8px;padding:10px;border-ra
 button{background:#fff;color:#000;font-weight:bold}
 .card{background:#222;padding:10px;border-radius:6px;margin-bottom:10px}
 .hidden{display:none}
-.total{font-size:18px;font-weight:bold;margin-top:10px}
-img{max-width:100%;border-radius:8px;margin-bottom:10px}
-
-@media print{
-nav,button,input,select,textarea{display:none}
-body{background:#fff;color:#000}
-}
+.suggest{background:#333;padding:8px;border-radius:6px;margin-top:-6px}
+.suggest div{padding:5px;border-bottom:1px solid #444}
+.suggest div:last-child{border:none}
 </style>
 </head>
 
@@ -33,110 +28,102 @@ body{background:#fff;color:#000}
 <header>CHEF PRO</header>
 
 <nav>
-<button onclick="showPage('home')">➕ Nuova</button>
-<button onclick="showPage('categorie')">📂 Ricette</button>
+<button onclick="showPage('home')">NUOVA</button>
+<button onclick="showPage('ricette')">RICETTE</button>
 </nav>
 
 <section id="home">
 <h2>Nuova Ricetta</h2>
 
 <input id="nome" placeholder="Nome ricetta">
-<select id="categoria" onchange="toggleFoto()"></select>
 
-<input type="file" id="foto" accept="image/*" capture="environment">
-
-<textarea id="descrizione" placeholder="Procedimento"></textarea>
+<select id="categoria">
+<option>Antipasti</option>
+<option>Primi</option>
+<option>Secondi</option>
+<option>Dolci</option>
+<option>Preparazioni base</option>
+</select>
 
 <h3>Ingredienti</h3>
-<input id="ingNome" placeholder="Ingrediente">
+<input id="ingInput" placeholder="Ingrediente">
+<div id="suggestioni" class="suggest hidden"></div>
 <input id="ingQuantita" placeholder="Quantità">
-<label><input type="checkbox" id="usaCosto"> Calcola food cost</label>
-<input id="ingCosto" type="number" placeholder="Costo" class="hidden">
-<button onclick="aggiungiIngredienteTemp()">Aggiungi ingrediente</button>
+<button onclick="aggiungiIngrediente()">Aggiungi ingrediente</button>
 
-<div id="ingredientiTemp"></div>
+<div id="listaIngredienti"></div>
+
+<h3>Procedimento</h3>
+<div id="passaggi"></div>
+<button onclick="aggiungiPassaggio()">➕ Aggiungi passaggio</button>
+
+<input id="finitura" placeholder="Finitura del piatto">
 
 <button onclick="salvaRicetta()">Salva ricetta</button>
 </section>
 
-<section id="categorie" class="hidden">
-<input id="cerca" placeholder="Cerca ricette..." oninput="cercaRicette()">
-<div id="risultatiRicerca"></div>
-<h3>Categorie</h3>
-<div id="listaCategorie"></div>
-</section>
-
-<section id="ricetta" class="hidden">
-<h2 id="titoloRicetta"></h2>
-<img id="imgRicetta">
-<p id="testoRicetta"></p>
-
-<h3>Ingredienti</h3>
-<div id="listaIngredienti"></div>
-<div class="total" id="totaleCosto"></div>
-
-<button onclick="window.print()">🖨 Stampa</button>
+<section id="ricette" class="hidden">
+<div id="listaRicette"></div>
 </section>
 
 <script>
-let categorie=["Antipasti","Primi","Secondi","Dolci","Preparazioni base"];
-let ricette=JSON.parse(localStorage.getItem("ricette"))||[];
-let tempIngredienti=[], fotoBase64=null, attiva=null;
+let ricette = JSON.parse(localStorage.getItem("ricette")) || [];
+let ingredientDB = JSON.parse(localStorage.getItem("ingredientDB")) || 
+["Pomodoro","Patata","Cipolla","Aglio","Olio extravergine","Sale","Pepe","Zucchero","Farina","Uova","Latte","Burro"];
 
-usaCosto.onchange=()=>ingCosto.classList.toggle("hidden",!usaCosto.checked);
+let ingredientiTemp=[];
+let passaggiTemp=[];
 
 function showPage(id){
  document.querySelectorAll("section").forEach(s=>s.classList.add("hidden"));
  document.getElementById(id).classList.remove("hidden");
+ renderRicette();
 }
 
-function toggleFoto(){
- foto.classList.toggle("hidden", categoria.value==="Preparazioni base");
+function aggiungiIngrediente(){
+ if(!ingInput.value || !ingQuantita.value) return;
+ if(!ingredientDB.includes(ingInput.value)){
+  ingredientDB.push(ingInput.value);
+  localStorage.setItem("ingredientDB",JSON.stringify(ingredientDB));
+ }
+ ingredientiTemp.push({nome:ingInput.value,quantita:ingQuantita.value});
+ ingInput.value="";ingQuantita.value="";
+ suggerimenti.classList.add("hidden");
+ renderIngredienti();
 }
 
-foto.onchange=()=>{
- let f=foto.files[0];
- if(!f)return;
- let r=new FileReader();
- r.onload=()=>fotoBase64=r.result;
- r.readAsDataURL(f);
-}
-
-function aggiornaCategorie(){
- categoria.innerHTML="";
- categorie.forEach(c=>{
-  let o=document.createElement("option");
-  o.value=o.textContent=c;
-  categoria.appendChild(o);
+function renderIngredienti(){
+ listaIngredienti.innerHTML="";
+ ingredientiTemp.forEach(i=>{
+  listaIngredienti.innerHTML+=
+   `<div class="card">${i.nome} – ${i.quantita}</div>`;
  });
- toggleFoto();
- listaCategorie.innerHTML="";
- categorie.forEach(c=>{
+}
+
+ingInput.oninput=()=>{
+ let v=ingInput.value.toLowerCase();
+ if(!v){suggerimenti.classList.add("hidden");return;}
+ suggerimenti.innerHTML="";
+ ingredientDB.filter(i=>i.toLowerCase().includes(v)).forEach(i=>{
   let d=document.createElement("div");
-  d.className="card";
-  d.textContent=c;
-  d.onclick=()=>mostraCategoria(c);
-  listaCategorie.appendChild(d);
+  d.textContent=i;
+  d.onclick=()=>{ingInput.value=i;suggerimenti.classList.add("hidden");};
+  suggerimenti.appendChild(d);
  });
+ suggerimenti.classList.remove("hidden");
 }
 
-function aggiungiIngredienteTemp(){
- if(!ingNome.value||!ingQuantita.value)return;
- tempIngredienti.push({
-  nome:ingNome.value,
-  quantita:ingQuantita.value,
-  costo:usaCosto.checked?parseFloat(ingCosto.value)||null:null
- });
- ingNome.value="";ingQuantita.value="";ingCosto.value="";
- usaCosto.checked=false;ingCosto.classList.add("hidden");
- renderTemp();
+function aggiungiPassaggio(){
+ passaggiTemp.push("");
+ renderPassaggi();
 }
 
-function renderTemp(){
- ingredientiTemp.innerHTML="";
- tempIngredienti.forEach(i=>{
-  ingredientiTemp.innerHTML+=
-   `<div class="card">${i.nome} – ${i.quantita} ${i.costo?"€ "+i.costo:"(costo non calcolato)"}</div>`;
+function renderPassaggi(){
+ passaggi.innerHTML="";
+ passaggiTemp.forEach((p,i)=>{
+  passaggi.innerHTML+=
+   `<textarea placeholder="Passaggio ${i+1}" 
+    oninput="passaggiTemp[${i}]=this.value">${p}</textarea>`;
  });
 }
 
@@ -145,58 +132,23 @@ function salvaRicetta(){
  ricette.push({
   nome:nome.value,
   categoria:categoria.value,
-  descrizione:descrizione.value,
-  ingredienti:tempIngredienti,
-  foto:categoria.value==="Preparazioni base"?null:fotoBase64
+  ingredienti:ingredientiTemp,
+  procedimento:passaggiTemp,
+  finitura:finitura.value
  });
  localStorage.setItem("ricette",JSON.stringify(ricette));
- nome.value="";descrizione.value="";foto.value="";
- tempIngredienti=[];fotoBase64=null;renderTemp();
+ nome.value="";finitura.value="";
+ ingredientiTemp=[];passaggiTemp=[];
+ renderIngredienti();renderPassaggi();
 }
 
-function mostraCategoria(cat){
- risultatiRicerca.innerHTML="";
- ricette.filter(r=>r.categoria===cat).forEach(r=>{
-  let d=document.createElement("div");
-  d.className="card";
-  d.textContent=r.nome;
-  d.onclick=()=>mostraRicetta(r);
-  risultatiRicerca.appendChild(d);
+function renderRicette(){
+ listaRicette.innerHTML="";
+ ricette.forEach(r=>{
+  listaRicette.innerHTML+=
+   `<div class="card"><strong>${r.nome}</strong><br>${r.categoria}</div>`;
  });
 }
-
-function mostraRicetta(r){
- attiva=r;showPage("ricetta");
- titoloRicetta.textContent=r.nome;
- testoRicetta.textContent=r.descrizione;
- imgRicetta.src=r.foto||"";imgRicetta.style.display=r.foto?"block":"none";
- aggiornaIngredienti();
-}
-
-function aggiornaIngredienti(){
- listaIngredienti.innerHTML="";
- let tot=0, haCosto=false;
- attiva.ingredienti.forEach(i=>{
-  if(i.costo){tot+=i.costo;haCosto=true;}
-  listaIngredienti.innerHTML+=
-   `<div class="card">${i.nome} – ${i.quantita} ${i.costo?"€ "+i.costo:"(costo non calcolato)"}</div>`;
- });
- totaleCosto.textContent=haCosto?"Food cost totale: € "+tot.toFixed(2):"";
-}
-
-function cercaRicette(){
- let t=cerca.value.toLowerCase();
- risultatiRicerca.innerHTML="";
- ricette.filter(r=>r.nome.toLowerCase().includes(t)).forEach(r=>{
-  let d=document.createElement("div");
-  d.className="card";
-  d.textContent=r.nome+" ("+r.categoria+")";
-  d.onclick=()=>mostraRicetta(r);
-  risultatiRicerca.appendChild(d);
- });
-}
-
-aggiornaCategorie();
 </script>
 
 </body>
