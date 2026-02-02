@@ -151,6 +151,8 @@ img.thumb{max-width:100%;border-radius:8px;margin-bottom:8px}
 <script>
 let ricette=JSON.parse(localStorage.getItem("ricette"))||[];
 let ingredientiTemp=[],passaggiTemp=[],fotoTemp=[];
+let ricettaInModifica = null;
+  
 
 function showPage(id){
  document.querySelectorAll("section").forEach(s=>s.classList.add("hidden"));
@@ -203,7 +205,7 @@ function renderFoto(){
 }
 
 function salvaRicetta(){
- ricette.push({
+ let nuova = {
   nome:nome.value,
   categoria:categoria.value,
   ingredienti:ingredientiTemp,
@@ -211,18 +213,31 @@ function salvaRicetta(){
   finitura:finitura.value,
   foto:fotoTemp,
   stampaFoto:stampaFoto.checked
- });
+ };
+
+ if(ricettaInModifica !== null){
+  ricette[ricettaInModifica] = nuova;
+  ricettaInModifica = null;
+ } else {
+  ricette.push(nuova);
+ }
+
  localStorage.setItem("ricette",JSON.stringify(ricette));
  location.reload();
 }
+
 
 function renderRicette(){
  listaRicette.innerHTML="";
  ricette.forEach((r,i)=>{
   let d=document.createElement("div");
   d.className="card";
-  d.textContent=r.nome;
-  d.onclick=()=>mostraScheda(i);
+  d.innerHTML = `
+    <strong>${r.nome}</strong><br>
+    <small>${r.categoria}</small><br><br>
+    <button onclick="modificaRicetta(${i})">✏️ Modifica</button>
+    <button onclick="eliminaRicetta(${i})">🗑️ Elimina</button>
+  `;
   listaRicette.appendChild(d);
  });
 }
@@ -248,6 +263,31 @@ function mostraScheda(i){
   fotoDaStampare.forEach(f=>{
     fotoScheda.innerHTML += `<img src="${f}" class="thumb">`;
   });
+ }
+}
+function modificaRicetta(i){
+ let r = ricette[i];
+ ricettaInModifica = i;
+
+ showPage("home");
+
+ nome.value = r.nome;
+ categoria.value = r.categoria;
+ ingredientiTemp = [...r.ingredienti];
+ passaggiTemp = [...r.procedimento];
+ finitura.value = r.finitura;
+ fotoTemp = r.foto || [];
+ stampaFoto.checked = r.stampaFoto || false;
+
+ renderIngredienti();
+ renderPassaggi();
+ renderFoto();
+}
+function eliminaRicetta(i){
+ if(confirm("Sei sicuro di voler eliminare questa ricetta?")){
+  ricette.splice(i,1);
+  localStorage.setItem("ricette",JSON.stringify(ricette));
+  renderRicette();
  }
 }
 
