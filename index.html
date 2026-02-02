@@ -230,12 +230,27 @@ function renderRicette(){
 function mostraScheda(i){
  let r=ricette[i];
  showPage("scheda");
+
  titolo.textContent=r.nome;
- ingredientiScheda.innerHTML=r.ingredienti.map(i=>`<div>${i.n} – ${i.q}</div>`).join("");
- procedimentoScheda.innerHTML=r.procedimento.map((p,i)=>`<p>${i+1}. ${p}</p>`).join("");
- finituraScheda.textContent=r.finitura;
- fotoScheda.innerHTML=r.stampaFoto?r.foto.map(f=>`<img src="${f}" class="thumb">`).join(""):"";
+ ingredientiScheda.innerHTML =
+  r.ingredienti.map(i=>`<div>${i.n} – ${i.q}</div>`).join("");
+
+ procedimentoScheda.innerHTML =
+  r.procedimento.map((p,i)=>`<p>${i+1}. ${p}</p>`).join("");
+
+ finituraScheda.textContent = r.finitura;
+
+ fotoScheda.innerHTML = "";
+
+ if(r.stampaFoto && r.foto.length){
+  // SOLO 1 FOTO se sono troppe
+  let fotoDaStampare = r.foto.slice(0,2);
+  fotoDaStampare.forEach(f=>{
+    fotoScheda.innerHTML += `<img src="${f}" class="thumb">`;
+  });
+ }
 }
+
 </script>
 
 </body>
