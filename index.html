@@ -22,69 +22,21 @@ img.thumb{max-width:100%;border-radius:8px;margin-bottom:8px}
 
 @media print{
   nav,button,input,select,textarea,.no-print{display:none}
-
   body{
     background:#fff;
     color:#000;
     font-size:11px;
     margin:8mm;
   }
-
-  h2{
-    font-size:18px;
-    margin:4px 0;
-  }
-
-  h3{
-    font-size:14px;
-    margin:4px 0;
-  }
-
-  p, div{
-    margin:2px 0;
-    line-height:1.2;
-    page-break-inside:avoid;
-  }
-
-  #fotoScheda{
-    display:flex;
-    flex-wrap:wrap;
-    gap:4mm;
-    margin-bottom:6mm;
-  }
-
   img.thumb{
     width:48%;
     max-height:90px;
     object-fit:cover;
-    page-break-inside:avoid;
-  }
-}
-
-  h2,h3{
-    margin:4px 0;
-  }
-
-  img.thumb{
-    max-width:45%;
-    max-height:120px;
-    object-fit:cover;
-    display:inline-block;
     margin:4px;
     page-break-inside:avoid;
   }
-
-  #fotoScheda{
-    display:flex;
-    flex-wrap:wrap;
-    justify-content:flex-start;
-  }
-
-  .card, p, div{
-    page-break-inside:avoid;
-  }
+  #fotoScheda{display:flex;flex-wrap:wrap}
 }
-
 </style>
 </head>
 
@@ -97,6 +49,7 @@ img.thumb{max-width:100%;border-radius:8px;margin-bottom:8px}
 <button onclick="showPage('ricette')">RICETTE</button>
 </nav>
 
+<!-- NUOVA RICETTA -->
 <section id="home">
 <h2>Nuova Ricetta</h2>
 
@@ -122,7 +75,6 @@ img.thumb{max-width:100%;border-radius:8px;margin-bottom:8px}
 
 <input id="finitura" placeholder="Finitura del piatto">
 
-<!-- FOTO -->
 <div id="fotoSezione">
 <button class="icon-btn no-print" onclick="fotoInput.click()">📷 Aggiungi foto del piatto</button>
 <input type="file" id="fotoInput" accept="image/*" capture="environment" multiple class="hidden">
@@ -135,49 +87,40 @@ img.thumb{max-width:100%;border-radius:8px;margin-bottom:8px}
 <button onclick="salvaRicetta()">Salva ricetta</button>
 </section>
 
+<!-- ELENCO RICETTE -->
 <section id="ricette" class="hidden">
 <input id="cerca" placeholder="Cerca ricetta..." oninput="cercaRicetta()">
 <div id="listaRicette"></div>
 </section>
 
-
+<!-- SCHEDA RICETTA -->
 <section id="scheda" class="hidden">
 <h2 id="titolo"></h2>
-
-<div class="no-print">
-<button onclick="modificaRicetta(ricettaAperta)">✏️ Modifica</button>
-<button onclick="eliminaRicetta(ricettaAperta)">🗑️ Elimina</button>
-</div>
-
 <div id="fotoScheda"></div>
 <div id="ingredientiScheda"></div>
 <div id="procedimentoScheda"></div>
 <p id="finituraScheda"></p>
-
 <button onclick="window.print()">🖨 Stampa</button>
 </section>
 
-
 <script>
-let ricette=JSON.parse(localStorage.getItem("ricette"))||[];
-let ingredientiTemp=[],passaggiTemp=[],fotoTemp=[];
-let ricettaInModifica = null;
-  
+let ricette = JSON.parse(localStorage.getItem("ricette")) || [];
+let ingredientiTemp = [], passaggiTemp = [], fotoTemp = [];
 
 function showPage(id){
  document.querySelectorAll("section").forEach(s=>s.classList.add("hidden"));
  document.getElementById(id).classList.remove("hidden");
- if(id==="ricette")renderRicette();
+ if(id==="ricette") renderRicette();
 }
 
 function toggleFoto(){
- fotoSezione.classList.toggle("hidden",categoria.value==="Preparazioni base");
+ fotoSezione.classList.toggle("hidden", categoria.value==="Preparazioni base");
 }
 
 function aggiungiIngrediente(){
- if(!ingInput.value||!ingQuantita.value)return;
+ if(!ingInput.value || !ingQuantita.value) return;
  ingredientiTemp.push({n:ingInput.value,q:ingQuantita.value});
- ingInput.value="";ingQuantita.value="";
+ ingInput.value=""; ingQuantita.value="";
  renderIngredienti();
 }
 
@@ -215,7 +158,7 @@ function renderFoto(){
 }
 
 function salvaRicetta(){
- let nuova = {
+ ricette.push({
   nome:nome.value,
   categoria:categoria.value,
   ingredienti:ingredientiTemp,
@@ -223,37 +166,41 @@ function salvaRicetta(){
   finitura:finitura.value,
   foto:fotoTemp,
   stampaFoto:stampaFoto.checked
- };
-
- if(ricettaInModifica !== null){
-  ricette[ricettaInModifica] = nuova;
-  ricettaInModifica = null;
- } else {
-  ricette.push(nuova);
- }
-
+ });
  localStorage.setItem("ricette",JSON.stringify(ricette));
  location.reload();
 }
-
 
 function renderRicette(){
  listaRicette.innerHTML="";
  ricette.forEach((r,i)=>{
   let d=document.createElement("div");
   d.className="card";
-  d.innerHTML = `<strong>${r.nome}</strong><br><small>${r.categoria}</small>`;
-  d.onclick = ()=>mostraScheda(i);
+  d.innerHTML=`<strong>${r.nome}</strong><br><small>${r.categoria}</small>`;
+  d.onclick=()=>mostraScheda(i);
   listaRicette.appendChild(d);
  });
 }
 
+function cercaRicetta(){
+ let t = cerca.value.toLowerCase();
+ listaRicette.innerHTML="";
+ ricette
+  .filter(r=>r.nome.toLowerCase().includes(t))
+  .forEach((r,i)=>{
+    let d=document.createElement("div");
+    d.className="card";
+    d.innerHTML=`<strong>${r.nome}</strong><br><small>${r.categoria}</small>`;
+    d.onclick=()=>mostraScheda(i);
+    listaRicette.appendChild(d);
+  });
+}
 
 function mostraScheda(i){
- let r=ricette[i];
+ let r = ricette[i];
  showPage("scheda");
 
- titolo.textContent=r.nome;
+ titolo.textContent = r.nome;
  ingredientiScheda.innerHTML =
   r.ingredienti.map(i=>`<div>${i.n} – ${i.q}</div>`).join("");
 
@@ -262,54 +209,12 @@ function mostraScheda(i){
 
  finituraScheda.textContent = r.finitura;
 
- fotoScheda.innerHTML = "";
-
- if(r.stampaFoto && r.foto.length){
-  // SOLO 1 FOTO se sono troppe
-  let fotoDaStampare = r.foto.slice(0,2);
-  fotoDaStampare.forEach(f=>{
-    fotoScheda.innerHTML += `<img src="${f}" class="thumb">`;
+ fotoScheda.innerHTML="";
+ if(r.stampaFoto && r.foto){
+  r.foto.slice(0,2).forEach(f=>{
+    fotoScheda.innerHTML+=`<img src="${f}" class="thumb">`;
   });
  }
-}
-function modificaRicetta(i){
- let r = ricette[i];
- ricettaInModifica = i;
-
- showPage("home");
-
- nome.value = r.nome;
- categoria.value = r.categoria;
- ingredientiTemp = [...r.ingredienti];
- passaggiTemp = [...r.procedimento];
- finitura.value = r.finitura;
- fotoTemp = r.foto || [];
- stampaFoto.checked = r.stampaFoto || false;
-
- renderIngredienti();
- renderPassaggi();
- renderFoto();
-}
-function eliminaRicetta(i){
- if(confirm("Sei sicuro di voler eliminare questa ricetta?")){
-  ricette.splice(i,1);
-  localStorage.setItem("ricette",JSON.stringify(ricette));
-  renderRicette();
- }
-}
-function cercaRicetta(){
- let t = cerca.value.toLowerCase();
- listaRicette.innerHTML = "";
-
- ricette
-  .filter(r => r.nome.toLowerCase().includes(t))
-  .forEach((r,i)=>{
-    let d = document.createElement("div");
-    d.className = "card";
-    d.innerHTML = `<strong>${r.nome}</strong><br><small>${r.categoria}</small>`;
-    d.onclick = () => mostraScheda(i);
-    listaRicette.appendChild(d);
-  });
 }
 </script>
 
