@@ -63,6 +63,10 @@ img {
 .hidden {
   display: none;
 }
+.small {
+  font-size: 14px;
+  opacity: 0.7;
+}
 </style>
 </head>
 
@@ -80,7 +84,7 @@ img {
   <h2>Nuova Ricetta</h2>
 
   <input id="nome" placeholder="Nome ricetta">
-  
+
   <select id="categoria"></select>
 
   <textarea id="descrizione" placeholder="Procedimento"></textarea>
@@ -90,8 +94,18 @@ img {
   <button onclick="salvaRicetta()">Salva Ricetta</button>
 </section>
 
-<!-- CATEGORIE -->
+<!-- CATEGORIE + RICERCA -->
 <section id="categorie" class="hidden">
+  <h2>Cerca Ricetta</h2>
+
+  <input
+    id="cerca"
+    placeholder="Cerca in tutte le ricette..."
+    oninput="cercaRicette()"
+  >
+
+  <div id="risultatiRicerca"></div>
+
   <h2>Categorie</h2>
   <div id="listaCategorie"></div>
 
@@ -99,7 +113,7 @@ img {
   <button onclick="aggiungiCategoria()">Aggiungi categoria</button>
 </section>
 
-<!-- RICETTE -->
+<!-- RICETTE PER CATEGORIA -->
 <section id="ricette" class="hidden">
   <h2 id="titoloCategoria"></h2>
   <div id="listaRicette"></div>
@@ -126,8 +140,10 @@ function aggiornaSelectCategorie() {
 }
 
 function aggiungiCategoria() {
-  const nome = document.getElementById("nuovaCategoria").value;
+  const nome = document.getElementById("nuovaCategoria").value.trim();
   if (!nome) return;
+  if (categorie.includes(nome)) return alert("Categoria già esistente");
+
   categorie.push(nome);
   localStorage.setItem("categorie", JSON.stringify(categorie));
   document.getElementById("nuovaCategoria").value = "";
@@ -148,12 +164,12 @@ function mostraCategorie() {
 }
 
 function salvaRicetta() {
-  const nome = document.getElementById("nome").value;
+  const nome = document.getElementById("nome").value.trim();
   const categoria = document.getElementById("categoria").value;
-  const descrizione = document.getElementById("descrizione").value;
+  const descrizione = document.getElementById("descrizione").value.trim();
   const fotoInput = document.getElementById("foto");
 
-  if (!nome) return alert("Inserisci il nome");
+  if (!nome) return alert("Inserisci il nome della ricetta");
 
   if (fotoInput.files[0]) {
     const reader = new FileReader();
@@ -182,12 +198,38 @@ function mostraRicetteCategoria(cat) {
     const card = document.createElement("div");
     card.className = "card";
     card.innerHTML = `
-      <strong>${r.nome}</strong><br>
+      <strong>${r.nome}</strong>
+      <div class="small">${r.categoria}</div>
       ${r.foto ? `<img src="${r.foto}">` : ""}
       <p>${r.descrizione}</p>
     `;
     div.appendChild(card);
   });
+}
+
+function cercaRicette() {
+  const testo = document.getElementById("cerca").value.toLowerCase();
+  const risultati = document.getElementById("risultatiRicerca");
+  risultati.innerHTML = "";
+
+  if (!testo) return;
+
+  ricette
+    .filter(r =>
+      r.nome.toLowerCase().includes(testo) ||
+      (r.descrizione && r.descrizione.toLowerCase().includes(testo))
+    )
+    .forEach(r => {
+      const card = document.createElement("div");
+      card.className = "card";
+      card.innerHTML = `
+        <strong>${r.nome}</strong>
+        <div class="small">${r.categoria}</div>
+        ${r.foto ? `<img src="${r.foto}">` : ""}
+        <p>${r.descrizione}</p>
+      `;
+      risultati.appendChild(card);
+    });
 }
 
 aggiornaSelectCategorie();
@@ -196,4 +238,3 @@ mostraCategorie();
 
 </body>
 </html>
-
