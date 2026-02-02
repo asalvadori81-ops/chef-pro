@@ -19,11 +19,11 @@ button{background:#fff;color:#000;font-weight:bold}
 .card{background:#222;padding:10px;border-radius:6px;margin-bottom:10px}
 .hidden{display:none}
 .total{font-size:18px;font-weight:bold;margin-top:10px}
+img{max-width:100%;border-radius:8px;margin-bottom:10px}
 
 @media print{
-body{background:#fff;color:#000}
 nav,button,input,select,textarea{display:none}
-.card{border:1px solid #000}
+body{background:#fff;color:#000}
 }
 </style>
 </head>
@@ -39,17 +39,19 @@ nav,button,input,select,textarea{display:none}
 
 <section id="home">
 <h2>Nuova Ricetta</h2>
+
 <input id="nome" placeholder="Nome ricetta">
-<select id="categoria"></select>
+<select id="categoria" onchange="toggleFoto()"></select>
+
+<input type="file" id="foto" accept="image/*" capture="environment">
+
 <textarea id="descrizione" placeholder="Procedimento"></textarea>
 
 <h3>Ingredienti</h3>
 <input id="ingNome" placeholder="Ingrediente">
-<input id="ingQuantita" placeholder="Quantità (es. 500 g, q.b.)">
-<label>
-<input type="checkbox" id="usaCosto"> Calcola food cost
-</label>
-<input id="ingCosto" type="number" placeholder="Costo €/kg o totale" class="hidden">
+<input id="ingQuantita" placeholder="Quantità">
+<label><input type="checkbox" id="usaCosto"> Calcola food cost</label>
+<input id="ingCosto" type="number" placeholder="Costo" class="hidden">
 <button onclick="aggiungiIngredienteTemp()">Aggiungi ingrediente</button>
 
 <div id="ingredientiTemp"></div>
@@ -58,7 +60,7 @@ nav,button,input,select,textarea{display:none}
 </section>
 
 <section id="categorie" class="hidden">
-<input id="cerca" placeholder="Cerca in tutte le ricette..." oninput="cercaRicette()">
+<input id="cerca" placeholder="Cerca ricette..." oninput="cercaRicette()">
 <div id="risultatiRicerca"></div>
 <h3>Categorie</h3>
 <div id="listaCategorie"></div>
@@ -66,34 +68,38 @@ nav,button,input,select,textarea{display:none}
 
 <section id="ricetta" class="hidden">
 <h2 id="titoloRicetta"></h2>
+<img id="imgRicetta">
 <p id="testoRicetta"></p>
 
 <h3>Ingredienti</h3>
 <div id="listaIngredienti"></div>
 <div class="total" id="totaleCosto"></div>
 
-<button id="stampaBtn" onclick="window.print()">🖨 Stampa scheda</button>
-
-<div id="campiStampa" class="card">
-<p><strong>Chef:</strong> ______________________</p>
-<p><strong>Data Produzione:</strong> ______________________</p>
-<p><strong>Data Abbattimento:</strong> ______________________</p>
-<p><strong>Stoccaggio:</strong> ______________________</p>
-<p><strong>Lotto:</strong> ______________________</p>
-</div>
+<button onclick="window.print()">🖨 Stampa</button>
 </section>
 
 <script>
 let categorie=["Antipasti","Primi","Secondi","Dolci","Preparazioni base"];
 let ricette=JSON.parse(localStorage.getItem("ricette"))||[];
-let tempIngredienti=[];
-let attiva=null;
+let tempIngredienti=[], fotoBase64=null, attiva=null;
 
 usaCosto.onchange=()=>ingCosto.classList.toggle("hidden",!usaCosto.checked);
 
 function showPage(id){
  document.querySelectorAll("section").forEach(s=>s.classList.add("hidden"));
  document.getElementById(id).classList.remove("hidden");
+}
+
+function toggleFoto(){
+ foto.classList.toggle("hidden", categoria.value==="Preparazioni base");
+}
+
+foto.onchange=()=>{
+ let f=foto.files[0];
+ if(!f)return;
+ let r=new FileReader();
+ r.onload=()=>fotoBase64=r.result;
+ r.readAsDataURL(f);
 }
 
 function aggiornaCategorie(){
@@ -103,6 +109,7 @@ function aggiornaCategorie(){
   o.value=o.textContent=c;
   categoria.appendChild(o);
  });
+ toggleFoto();
  listaCategorie.innerHTML="";
  categorie.forEach(c=>{
   let d=document.createElement("div");
@@ -120,8 +127,8 @@ function aggiungiIngredienteTemp(){
   quantita:ingQuantita.value,
   costo:usaCosto.checked?parseFloat(ingCosto.value)||null:null
  });
- ingNome.value="";ingQuantita.value="";ingCosto.value="";usaCosto.checked=false;
- ingCosto.classList.add("hidden");
+ ingNome.value="";ingQuantita.value="";ingCosto.value="";
+ usaCosto.checked=false;ingCosto.classList.add("hidden");
  renderTemp();
 }
 
@@ -129,7 +136,7 @@ function renderTemp(){
  ingredientiTemp.innerHTML="";
  tempIngredienti.forEach(i=>{
   ingredientiTemp.innerHTML+=
-   `<div class="card">${i.nome} – ${i.quantita} ${i.costo? "€ "+i.costo:"(costo non calcolato)"}</div>`;
+   `<div class="card">${i.nome} – ${i.quantita} ${i.costo?"€ "+i.costo:"(costo non calcolato)"}</div>`;
  });
 }
 
@@ -139,11 +146,12 @@ function salvaRicetta(){
   nome:nome.value,
   categoria:categoria.value,
   descrizione:descrizione.value,
-  ingredienti:tempIngredienti
+  ingredienti:tempIngredienti,
+  foto:categoria.value==="Preparazioni base"?null:fotoBase64
  });
  localStorage.setItem("ricette",JSON.stringify(ricette));
- nome.value="";descrizione.value="";
- tempIngredienti=[];renderTemp();
+ nome.value="";descrizione.value="";foto.value="";
+ tempIngredienti=[];fotoBase64=null;renderTemp();
 }
 
 function mostraCategoria(cat){
@@ -158,30 +166,20 @@ function mostraCategoria(cat){
 }
 
 function mostraRicetta(r){
- attiva=r;
- showPage("ricetta");
+ attiva=r;showPage("ricetta");
  titoloRicetta.textContent=r.nome;
  testoRicetta.textContent=r.descrizione;
+ imgRicetta.src=r.foto||"";imgRicetta.style.display=r.foto?"block":"none";
  aggiornaIngredienti();
- stampaBtn.style.display =
-  r.categoria==="Preparazioni base"?"none":"block";
- campiStampa.style.display =
-  r.categoria==="Preparazioni base"?"none":"block";
 }
 
 function aggiornaIngredienti(){
  listaIngredienti.innerHTML="";
- let tot=0;let haCosto=false;
+ let tot=0, haCosto=false;
  attiva.ingredienti.forEach(i=>{
-  if(i.costo){
-   tot+=i.costo;
-   haCosto=true;
-   listaIngredienti.innerHTML+=
-    `<div class="card">${i.nome} – ${i.quantita} → € ${i.costo.toFixed(2)}</div>`;
-  }else{
-   listaIngredienti.innerHTML+=
-    `<div class="card">${i.nome} – ${i.quantita} (costo non calcolato)</div>`;
-  }
+  if(i.costo){tot+=i.costo;haCosto=true;}
+  listaIngredienti.innerHTML+=
+   `<div class="card">${i.nome} – ${i.quantita} ${i.costo?"€ "+i.costo:"(costo non calcolato)"}</div>`;
  });
  totaleCosto.textContent=haCosto?"Food cost totale: € "+tot.toFixed(2):"";
 }
